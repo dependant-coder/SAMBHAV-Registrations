@@ -9,6 +9,7 @@ import Success from './pages/Success';
 import RequestEdit from './pages/RequestEdit';
 import EditDetails from './pages/EditDetails';
 import NotFound from './pages/NotFound';
+import Creator from './pages/Creator';
 
 // Admin pages — lazy loaded per spec §4 (code splitting)
 const AdminLogin = lazy(() => import('./pages/admin/Login'));
@@ -51,6 +52,7 @@ export default function AppRoutes() {
       <Route path="/success" element={<Success />} />
       <Route path="/request-edit" element={<RequestEdit />} />
       <Route path="/edit" element={<EditDetails />} />
+      <Route path="/creator" element={<Creator />} />
 
       {/* Admin routes — lazy loaded */}
       <Route

@@ -1,4 +1,5 @@
 import { useApp } from '../contexts/AppContext';
+import { Link } from 'react-router-dom';
 
 export function HelpFooter({
   title = 'Need a hand?',
@@ -49,6 +50,10 @@ export function HelpFooter({
           <p style={{ opacity: 0.9 }}>Please ask your domain lead.</p>
         )}
       </div>
+            <p className="foot__credit">
+        Built with <span aria-hidden="true">♥</span> by{' '}
+        <Link to="/creator">Vedant Darange</Link>
+      </p>
     </footer>
   );
 }

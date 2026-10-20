@@ -400,3 +400,18 @@ body {
 .btn--sm { min-height: 40px; padding: 0 16px; font-size: 14px; }
 .btn--xs { min-height: 32px; padding: 0 12px; font-size: 13px; }
 
+.foot__credit {
+  margin: 1.25rem 0 0;
+  font-size: 0.8rem;
+  font-weight: 700;
+  opacity: 0.85;
+}
+.foot__credit a {
+  color: inherit;
+  text-decoration: underline;
+  text-underline-offset: 3px;
+  text-decoration-thickness: 2px;
+}
+.foot__credit a:hover {
+  text-decoration-style: wavy;
+}

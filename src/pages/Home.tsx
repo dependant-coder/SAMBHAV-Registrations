@@ -763,6 +763,10 @@ export default function Home() {
           <span>{FEST_NAME} team registration</span>
           <Link to="/admin/login">Admin</Link>
         </div>
+              <p className="foot__credit">
+        Built with <span aria-hidden="true">♥</span> by{' '}
+        <Link to="/creator">Vedant Darange</Link>
+      </p>
       </footer>
     </div>
   );
