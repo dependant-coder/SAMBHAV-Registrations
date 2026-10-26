@@ -1,8 +1,9 @@
 // settings.tsx — Admin: Settings (Spec §10.6 + §19)
 import { useEffect, useState, useCallback } from 'react';
-import { CheckCircle, XCircle, ChevronUp, ChevronDown, Trash2, Plus } from 'lucide-react';
+import { CheckCircle, XCircle, ChevronUp, ChevronDown, Trash2, Plus, Crown } from 'lucide-react';
 import { supabase } from '../../lib/supabase';
 import { adminListOrphanPhotos, photoUrl, fetchSettings, fetchBranches, type Settings, type Branch } from '../../lib/api';
+import { DOMAINS } from '../../config';
 import { formatIST } from '../../lib/dates';
 import { InfoBox } from '../../components/InfoBox';
 import { ConfirmDialog } from '../../components/ConfirmDialog';
@@ -21,6 +22,12 @@ function fromISTInputValue(localStr: string): string {
 interface OrphanPhoto {
   name: string;
   created_at: string;
+}
+
+interface DomainLead {
+  domain_id: string;
+  role: string;
+  member: { name: string } | { name: string }[] | null;
 }
 
 export function AdminSettings() {
@@ -67,6 +74,9 @@ export function AdminSettings() {
   const [orphanDeleting, setOrphanDeleting] = useState(false);
   const [orphanSearched, setOrphanSearched] = useState(false);
 
+  // Section H: Domain leads
+  const [domainLeads, setDomainLeads] = useState<Map<string, DomainLead[]>>(new Map());
+
   const loadAll = useCallback(async () => {
     setLoadingSettings(true);
     try {
@@ -75,6 +85,36 @@ export function AdminSettings() {
         fetchBranches(),
         supabase.from('admins').select('user_id, email, created_at').order('created_at'),
       ]);
+
+      // Fetch domains (uuid <-> slug) and domain leads
+      const [{ data: dbDomains }, { data: leadData }] = await Promise.all([
+        supabase.from('domains').select('id, slug, name'),
+        supabase
+          .from('domain_roles')
+          .select('domain_id, role, member:members(name)')
+          .in('role', ['lead', 'colead']),
+      ]);
+
+      const slugByUuid = new Map<string, string>();
+      for (const d of (dbDomains ?? []) as { id: string; slug: string; name: string }[]) {
+        if (d.id && d.slug) slugByUuid.set(d.id, d.slug);
+      }
+
+      const leadMap = new Map<string, DomainLead[]>();
+      for (const row of ((leadData ?? []) as unknown as DomainLead[])) {
+        // Map by both domain_id (UUID) and slug (if resolved)
+        const arrUuid = leadMap.get(row.domain_id) ?? [];
+        arrUuid.push(row);
+        leadMap.set(row.domain_id, arrUuid);
+
+        const slug = slugByUuid.get(row.domain_id);
+        if (slug) {
+          const arrSlug = leadMap.get(slug) ?? [];
+          arrSlug.push(row);
+          leadMap.set(slug, arrSlug);
+        }
+      }
+      setDomainLeads(leadMap);
       setSettings(s);
       setBranches(b);
       setAdmins((adminData ?? []) as { user_id: string; email: string; created_at: string }[]);
@@ -485,6 +525,34 @@ export function AdminSettings() {
             </li>
           ))}
           {admins.length === 0 && <li style={{ color: 'var(--ink-soft)', fontSize: '0.9rem', fontWeight: 600 }}>No admins found</li>}
+        </ul>
+      </section>
+
+      {/* H. Domain Leads */}
+      <section className="admin-card">
+        <h2 className="admin-subtitle">Domain Leads</h2>
+        <ul style={{ listStyle: 'none', padding: 0, margin: 0, display: 'flex', flexDirection: 'column', gap: '0.4rem' }}>
+          {DOMAINS.map(d => {
+            const leads = domainLeads.get(d.slug) ?? [];
+            return (
+              <li key={d.slug} style={{ display: 'flex', alignItems: 'center', gap: '0.75rem', padding: '0.5rem 0.75rem', background: 'var(--paper)', border: '1.5px solid var(--ink)', borderRadius: 10 }}>
+                <Crown size={16} style={{ color: leads.length > 0 ? 'var(--sun)' : 'var(--ink-soft)', flexShrink: 0 }} />
+                <span style={{ flex: 1, fontWeight: 700, fontSize: '0.9rem', color: 'var(--ink)' }}>
+                  {d.name}
+                </span>
+                <span style={{ fontSize: '0.85rem', fontWeight: 600, color: leads.length > 0 ? 'var(--ink)' : 'var(--ink-soft)' }}>
+                  {leads.length > 0
+                    ? leads.map(l => {
+                        const mem = l.member;
+                        const name = (Array.isArray(mem) ? mem[0]?.name : mem?.name) ?? 'Unknown';
+                        const label = l.role === 'lead' ? 'Lead' : 'Co-lead';
+                        return `${label}: ${name}`;
+                      }).join(' · ')
+                    : 'No lead assigned'}
+                </span>
+              </li>
+            );
+          })}
         </ul>
       </section>
 

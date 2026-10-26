@@ -6,6 +6,7 @@ import { gsap } from 'gsap';
 import { ScrollTrigger } from 'gsap/ScrollTrigger';
 import { DomainCard } from '../components/DomainCard';
 import { GlobalBanners } from '../components/Banner';
+import MemberLoginLink from '../components/MemberLoginLink';
 import { useApp } from '../contexts/AppContext';
 import { DOMAINS, FEST_NAME } from '../config';
 
@@ -571,10 +572,13 @@ export default function Home() {
             </svg>
             {FEST_NAME}
           </Link>
-          <span className="pill" id="status-pill">
-            <span className="pill__dot" style={{ background: registrationIsOpen ? 'var(--mint)' : 'var(--pink)' }}></span>
-            <span id="status-text">{registrationIsOpen ? 'Registration open' : 'Registration closed'}</span>
-          </span>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '8px', flexWrap: 'wrap', justifyContent: 'flex-end' }}>
+            <MemberLoginLink variant="button" />
+            <span className="pill" id="status-pill">
+              <span className="pill__dot" style={{ background: registrationIsOpen ? 'var(--mint)' : 'var(--pink)' }}></span>
+              <span id="status-text">{registrationIsOpen ? 'Registration open' : 'Registration closed'}</span>
+            </span>
+          </div>
         </div>
 
         <GlobalBanners />
@@ -599,6 +603,7 @@ export default function Home() {
             <span id="cta-text">{registrationIsOpen ? 'Choose your domain' : 'See the domains'}</span>
             <svg className="bob" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.6" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true"><path d="M12 4v16M5 13l7 7 7-7"/></svg>
           </a>
+          <MemberLoginLink />
           <p className="meaning">Sambhav (<span lang="hi">संभव</span>) means “possible”.</p>
         </div>
       </header>

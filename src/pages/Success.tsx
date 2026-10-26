@@ -2,6 +2,7 @@ import { useEffect, useRef, useState } from 'react';
 import { Link, useLocation, useNavigate } from 'react-router-dom';
 import { useToast } from '../components/Toast';
 import { HelpFooter } from '../components/HelpFooter';
+import MemberLoginLink from '../components/MemberLoginLink';
 import { DOMAIN_MAP } from '../config';
 import { formatIST } from '../lib/dates';
 
@@ -318,6 +319,13 @@ export default function Success() {
           <p className="sx__sub">
             Welcome to the <b>{data.domainName}</b> team, <b>{firstName}</b>.
           </p>
+
+          <div style={{ margin: '14px 0 20px' }}>
+            <p style={{ fontSize: '14px', fontWeight: 600, color: 'var(--ink-soft)', marginBottom: 8, textAlign: 'center' }}>
+              Sign in with the same email you registered with.
+            </p>
+            <MemberLoginLink />
+          </div>
 
           <article className="pass" aria-label="Your Sambhav 4.0 team pass">
             <div className="pass__top">

@@ -15,6 +15,8 @@ import { useApp } from '../../contexts/AppContext';
 import { useToast } from '../../components/Toast';
 import { DOMAIN_MAP, DOMAINS, YEAR_LABELS } from '../../config';
 import { List, LayoutGrid, Search } from 'lucide-react';
+import MemberAppAccess from '../../components/admin/MemberAppAccess';
+import { useMemberFlags, MemberBadges, FlagFilterSelect, passesFlagFilter, type FlagFilter } from '../../components/admin/memberFlags';
 
 interface Member {
   id: string;
@@ -50,6 +52,7 @@ export function AdminMembers() {
 
   const initialDomain = (location.state as { filterDomain?: string } | null)?.filterDomain ?? '';
 
+  const flags = useMemberFlags();
   const [members, setMembers] = useState<Member[]>([]);
   const [loading, setLoading] = useState(true);
 
@@ -58,6 +61,7 @@ export function AdminMembers() {
   const [filterDomain, setFilterDomain] = useState(initialDomain);
   const [filterYear, setFilterYear] = useState('');
   const [filterBranch, setFilterBranch] = useState('');
+  const [appFilter, setAppFilter] = useState<FlagFilter>('');
   const [sort, setSort] = useState<SortMode>('newest');
   const [viewMode, setViewMode] = useState<ViewMode>('table');
 
@@ -81,6 +85,7 @@ export function AdminMembers() {
   // Delete
   const [deleteOpen, setDeleteOpen] = useState(false);
   const [deleting, setDeleting] = useState(false);
+  const [deleteWarning, setDeleteWarning] = useState<string | null>(null);
 
   // ZIP progress
   const [zipProgress, setZipProgress] = useState<ZipProgress>({ doing: false, done: 0, total: 0, skipped: 0 });
@@ -125,6 +130,7 @@ export function AdminMembers() {
   if (filterDomain) filtered = filtered.filter(m => m.domain_slug === filterDomain);
   if (filterYear) filtered = filtered.filter(m => m.year === Number(filterYear));
   if (filterBranch) filtered = filtered.filter(m => m.branch === filterBranch);
+  if (appFilter) filtered = filtered.filter(m => passesFlagFilter(appFilter, flags, m.id));
   if (sort === 'name') filtered = [...filtered].sort((a, b) => a.full_name.localeCompare(b.full_name));
   if (sort === 'domain') filtered = [...filtered].sort((a, b) => a.domain_slug.localeCompare(b.domain_slug));
 
@@ -144,6 +150,26 @@ export function AdminMembers() {
     setEditPhotoMode(false);
     setEditPhotoBlob(null);
     setEditPhotoPreview(null);
+    flags.reload();
+  }
+
+  async function promptDelete(m: Member) {
+    setDeleteWarning(null);
+    setDeleteOpen(true);
+    try {
+      const { data } = await supabase
+        .from('domain_roles')
+        .select('role, domain_id')
+        .eq('member_id', m.id);
+      if (data && data.length > 0) {
+        const r = data[0];
+        const roleLabel = r.role === 'lead' ? 'Lead' : 'Co-lead';
+        const domName = DOMAIN_MAP[m.domain_slug]?.name ?? m.domain_slug;
+        setDeleteWarning(`This person is the ${roleLabel} of ${domName}. Deleting them removes the role.`);
+      }
+    } catch (e) {
+      console.warn('[AdminMembers] Failed to check domain roles for delete:', e);
+    }
   }
 
   function startEdit(m: Member) {
@@ -393,6 +419,7 @@ export function AdminMembers() {
           <option value="name">Name A–Z</option>
           <option value="domain">Domain</option>
         </select>
+        <FlagFilterSelect value={appFilter} onChange={setAppFilter} />
         <div style={{ display: 'flex', gap: '0.25rem' }}>
           <button
             type="button"
@@ -443,9 +470,12 @@ export function AdminMembers() {
                     <img src={photoUrl(m.photo_path)} alt={m.full_name} style={{ width: 40, height: 40, borderRadius: '50%', border: '1.5px solid var(--ink)', objectFit: 'cover', display: 'block', background: 'var(--paper)' }} loading="lazy" />
                   </td>
                   <td style={{ padding: '0.5rem 0.75rem', whiteSpace: 'nowrap' }}>
-                    <div style={{ fontWeight: 500 }}>{m.full_name}</div>
+                    <div style={{ fontWeight: 500, display: 'flex', alignItems: 'center', flexWrap: 'wrap' }}>
+                      <span>{m.full_name}</span>
+                      <MemberBadges flags={flags} memberId={m.id} />
+                    </div>
                     {m.role && m.role !== 'member' && (
-                      <span style={{ fontSize: '0.7rem', background: 'var(--color-surface-2)', border: '1px solid var(--color-border)', borderRadius: 4, padding: '1px 5px', color: 'var(--color-text-secondary)' }}>
+                      <span style={{ fontSize: '0.7rem', background: 'var(--color-surface-2)', border: '1px solid var(--color-border)', borderRadius: 4, padding: '1px 5px', color: 'var(--color-text-secondary)', marginTop: 2, display: 'inline-block' }}>
                         {m.role}
                       </span>
                     )}
@@ -484,7 +514,10 @@ export function AdminMembers() {
             >
               <img src={photoUrl(m.photo_path)} alt={m.full_name} style={{ width: 60, height: 60, borderRadius: '50%', objectFit: 'cover', flexShrink: 0 }} loading="lazy" />
               <div style={{ minWidth: 0 }}>
-                <div style={{ fontWeight: 600, fontSize: '0.875rem', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{m.full_name}</div>
+                <div style={{ fontWeight: 600, fontSize: '0.875rem', display: 'flex', alignItems: 'center', flexWrap: 'wrap' }}>
+                  <span style={{ overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{m.full_name}</span>
+                  <MemberBadges flags={flags} memberId={m.id} />
+                </div>
                 <div style={{ fontSize: '0.75rem', color: 'var(--color-text-muted)', marginTop: 2 }}>{DOMAIN_MAP[m.domain_slug]?.name ?? m.domain_slug}</div>
                 <div style={{ fontSize: '0.75rem', color: 'var(--color-text-muted)', fontFamily: 'monospace' }}>{m.roll_number}</div>
                 <div style={{ fontSize: '0.7rem', color: 'var(--color-text-muted)', marginTop: 4 }}>{formatIST(m.created_at)}</div>
@@ -534,7 +567,7 @@ export function AdminMembers() {
               <ViewPane
                 member={selectedMember}
                 onEdit={() => startEdit(selectedMember)}
-                onDelete={() => setDeleteOpen(true)}
+                onDelete={() => promptDelete(selectedMember)}
                 onCopy={() => handleCopyDetails(selectedMember)}
                 navigate={navigate}
               />
@@ -574,6 +607,11 @@ export function AdminMembers() {
         description={
           <div>
             <p>Delete <strong>{selectedMember?.full_name}</strong>'s registration? The roster slot will become free so they (or the real person) can register again.</p>
+            {deleteWarning && (
+              <p style={{ marginTop: '0.5rem', fontWeight: 700, color: '#B8135A' }}>
+                {deleteWarning}
+              </p>
+            )}
             <p style={{ marginTop: '0.5rem', fontSize: '0.85rem', color: 'var(--color-text-muted)' }}>Note: The photo will also be deleted from storage.</p>
           </div>
         }
@@ -660,12 +698,17 @@ function ViewPane({ member: m, onEdit, onDelete, onCopy }: ViewPaneProps) {
       </dl>
 
       {/* Action buttons */}
-      <div style={{ display: 'flex', flexWrap: 'wrap', gap: '0.5rem' }}>
+      <div style={{ display: 'flex', flexWrap: 'wrap', gap: '0.5rem', marginBottom: '1.25rem' }}>
         <button type="button" className="btn btn--secondary btn--sm" onClick={onCopy}>Copy details</button>
         <a href={`tel:+91${m.phone}`} className="btn btn--secondary btn--sm" style={{ textDecoration: 'none' }}>Call</a>
         <a href={`https://wa.me/91${m.phone}`} target="_blank" rel="noopener noreferrer" className="btn btn--secondary btn--sm" style={{ textDecoration: 'none' }}>WhatsApp</a>
         <button type="button" className="btn btn--secondary btn--sm" onClick={onEdit}>Edit</button>
         <button type="button" className="btn btn--danger btn--sm" onClick={onDelete}>Delete</button>
+      </div>
+
+      {/* Member App Access */}
+      <div style={{ borderTop: '1px solid var(--color-border)', paddingTop: '1.25rem' }}>
+        <MemberAppAccess memberId={m.id} />
       </div>
     </div>
   );

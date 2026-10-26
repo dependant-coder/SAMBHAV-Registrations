@@ -9,6 +9,7 @@ import { DOMAIN_MAP, DOMAINS } from '../../config';
 import { Inbox, Clipboard } from 'lucide-react';
 import { EmptyState } from '../../components/EmptyState';
 import { getDomainIcon } from '../../lib/domainIcons';
+import OverviewCards from '../../components/admin/OverviewCards';
 
 interface RecentMember {
   id: string;
@@ -108,6 +109,9 @@ export function AdminOverview() {
   return (
     <div>
       <h1 className="admin-title">Overview</h1>
+
+      {/* Member-app overview cards (announcements, events, app installs) */}
+      <OverviewCards />
 
       {/* Big progress bar card */}
       <div className="admin-card">

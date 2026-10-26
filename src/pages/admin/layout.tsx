@@ -3,6 +3,7 @@ import { NavLink, Outlet, useNavigate } from 'react-router-dom';
 import { useState, useEffect } from 'react';
 import {
   LayoutDashboard, Users, Clock, PenLine, ClipboardList, Settings,
+  Megaphone, Calendar, FileText, QrCode,
   type LucideIcon,
 } from 'lucide-react';
 import { useAdmin } from '../../contexts/AdminContext';
@@ -17,10 +18,14 @@ interface NavItem {
 
 const NAV_ITEMS: NavItem[] = [
   { to: '/admin', label: 'Overview', icon: LayoutDashboard, end: true },
+  { to: '/admin/announcements', label: 'Announcements', icon: Megaphone },
+  { to: '/admin/events', label: 'Events', icon: Calendar },
+  { to: '/admin/scan', label: 'Scan IDs', icon: QrCode },
   { to: '/admin/members', label: 'Members', icon: Users },
   { to: '/admin/pending', label: 'Pending', icon: Clock },
   { to: '/admin/edit-requests', label: 'Edit Requests', icon: PenLine },
   { to: '/admin/allow-list', label: 'Allow-list', icon: ClipboardList },
+  { to: '/admin/audit', label: 'Audit Log', icon: FileText },
   { to: '/admin/settings', label: 'Settings', icon: Settings },
 ];
 
@@ -207,8 +212,10 @@ export function AdminLayout() {
           background: 'var(--white)',
           borderTop: '2.5px solid var(--ink)',
           display: 'flex',
-          justifyContent: 'space-around',
+          overflowX: 'auto',
           alignItems: 'center',
+          gap: 4,
+          padding: '0 6px',
           zIndex: 100,
           boxShadow: '0 -2px 0 rgba(20, 18, 58, 0.05)',
         }}
@@ -223,16 +230,18 @@ export function AdminLayout() {
               flexDirection: 'column',
               alignItems: 'center',
               justifyContent: 'center',
+              flexShrink: 0,
               gap: 2,
-              fontSize: '0.65rem',
+              fontSize: '0.62rem',
               fontWeight: isActive ? 800 : 700,
               textDecoration: 'none',
               color: 'var(--ink)',
               position: 'relative',
-              padding: '6px 10px',
+              padding: '4px 8px',
               borderRadius: '10px',
               background: isActive ? 'var(--sun)' : 'transparent',
               border: isActive ? '1.5px solid var(--ink)' : '1.5px solid transparent',
+              whiteSpace: 'nowrap',
             })}
           >
             <item.icon size={18} aria-hidden="true" />

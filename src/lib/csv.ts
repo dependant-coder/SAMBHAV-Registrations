@@ -12,8 +12,8 @@ function sanitizeCell(value: string | number | null | undefined): string {
   return s;
 }
 
-function escapeCell(value: string): string {
-  const safe = sanitizeCell(value);
+function escapeCell(value: unknown): string {
+  const safe = sanitizeCell(value == null ? '' : String(value));
   // Wrap in quotes if contains comma, newline or quote
   if (safe.includes(',') || safe.includes('\n') || safe.includes('"')) {
     return '"' + safe.replace(/"/g, '""') + '"';
@@ -41,3 +41,11 @@ export function downloadCSV(content: string, filename: string): void {
   a.click();
   URL.revokeObjectURL(url);
 }
+
+export const toCsv = (header: string[], rows: unknown[][]) =>
+  [header, ...rows].map((r) => r.map(escapeCell).join(',')).join('\r\n');
+
+export function downloadCsv(filename: string, text: string) {
+  downloadCSV(text, filename);
+}
+
